@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ABTalks – Day 03 – Role-Based Prompting</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1008;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .canvas {
+    width: 600px;
+    height: 600px;
+    background: #FAF5EE;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .bg-circle-1 {
+    position: absolute;
+    width: 260px; height: 260px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139,90,43,0.07) 0%, transparent 70%);
+    top: -60px; right: -40px;
+  }
+  .bg-circle-2 {
+    position: absolute;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(193,154,107,0.09) 0%, transparent 70%);
+    bottom: 40px; left: -30px;
+  }
+  .bg-line {
+    position: absolute;
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(139,90,43,0.15), transparent);
+    top: 82px;
+  }
+
+  .header {
+    padding: 20px 32px 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    position: relative;
+    z-index: 2;
+  }
+  .badge {
+    background: #3D1F0A;
+    color: #E8C99A;
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 5px 11px;
+    border-radius: 20px;
+  }
+  .day-tag { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+  .day-label { font-size: 8px; font-weight: 500; letter-spacing: 2px; color: #A0784A; text-transform: uppercase; }
+  .day-num { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 900; color: #3D1F0A; line-height: 1; }
+
+  .title-section { padding: 10px 32px 0; position: relative; z-index: 2; }
+  .main-heading { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 900; color: #2B1205; line-height: 1.08; letter-spacing: -0.5px; }
+  .main-heading span { color: #8B5A2B; }
+  .subheading { margin-top: 4px; font-size: 9.5px; font-weight: 400; color: #7A5C3A; font-style: italic; }
+
+  .center-question-wrap {
+    margin: 10px 32px 0;
+    background: #3D1F0A;
+    border-radius: 10px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    z-index: 2;
+  }
+  .brain-icon { flex-shrink: 0; width: 26px; height: 26px; background: rgba(232,201,154,0.18); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .brain-icon svg { width: 14px; height: 14px; }
+  .cq-label { font-size: 7px; font-weight: 600; letter-spacing: 1.5px; color: #C1976A; text-transform: uppercase; margin-bottom: 2px; }
+  .cq-text { font-size: 9.5px; font-weight: 500; color: #F5E8D4; line-height: 1.4; }
+
+  .flow-row {
+    display: flex; align-items: center; justify-content: center;
+    margin: 6px 32px 0; position: relative; z-index: 2;
+  }
+  .flow-line { flex: 1; height: 1.5px; background: #C1976A; max-width: 28%; }
+  .flow-arrow { width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 8px solid #C1976A; flex-shrink: 0; }
+
+  .cards-row {
+    display: flex; gap: 10px;
+    padding: 0 32px;
+    margin-top: 8px;
+    flex: 1;
+    position: relative; z-index: 2;
+  }
+  .card { flex: 1; border-radius: 12px; padding: 14px 12px 12px; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  .card-no-role   { background: #EDE0CE; border: 1px solid #D4B896; }
+  .card-founder   { background: #3D1F0A; border: 1px solid #5A3018; }
+  .card-developer { background: #2B1205; border: 1px solid #4A2510; }
+
+  .card-accent { position: absolute; top: 0; left: 0; right: 0; height: 2.5px; border-radius: 12px 12px 0 0; }
+  .acc-none    { background: #B89A75; }
+  .acc-founder { background: linear-gradient(90deg, #E8C99A, #C1976A); }
+  .acc-dev     { background: linear-gradient(90deg, #C1976A, #8B5A2B); }
+
+  .card-icon-wrap { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 7px; }
+  .ci-none    { background: rgba(139,90,43,0.12); }
+  .ci-founder { background: rgba(232,201,154,0.15); }
+  .ci-dev     { background: rgba(193,154,107,0.15); }
+  .card-icon-wrap svg { width: 12px; height: 12px; }
+
+  .card-type { font-size: 7px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 3px; }
+  .ct-none    { color: #9A7550; }
+  .ct-founder { color: #C1976A; }
+  .ct-dev     { color: #A07848; }
+
+  .card-title { font-family: 'Playfair Display', serif; font-size: 11.5px; font-weight: 700; line-height: 1.25; margin-bottom: 7px; }
+  .ctit-none    { color: #2B1205; }
+  .ctit-founder { color: #F5E8D4; }
+  .ctit-dev     { color: #EDD9BA; }
+
+  .card-prompt-box { border-radius: 6px; padding: 6px 8px; font-size: 8px; line-height: 1.45; margin-bottom: 8px; }
+  .cpb-none    { background: rgba(139,90,43,0.08); color: #5A3A1A; border-left: 2px solid #B89A75; }
+  .cpb-founder { background: rgba(232,201,154,0.08); color: #E8C99A; border-left: 2px solid #C1976A; }
+  .cpb-dev     { background: rgba(193,154,107,0.08); color: #D4B896; border-left: 2px solid #8B5A2B; }
+  .prompt-label { font-size: 6.5px; letter-spacing: 1.2px; text-transform: uppercase; font-weight: 600; margin-bottom: 2px; opacity: 0.7; }
+
+  .output-label { font-size: 6.5px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; margin-bottom: 5px; }
+  .ol-none    { color: #9A7550; }
+  .ol-founder { color: #C1976A; }
+  .ol-dev     { color: #A07848; }
+
+  .bullet { display: flex; align-items: flex-start; gap: 5px; margin-bottom: 4px; font-size: 8px; line-height: 1.4; }
+  .bullet-dot { width: 4px; height: 4px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .bd-none    { background: #B89A75; }
+  .bd-founder { background: #C1976A; }
+  .bd-dev     { background: #8B5A2B; }
+  .bt-none    { color: #4A2C10; }
+  .bt-founder { color: #D4B896; }
+  .bt-dev     { color: #C4A07A; }
+
+  .key-learning {
+    margin: 8px 32px 0;
+    background: linear-gradient(135deg, #8B5A2B 0%, #5A3018 100%);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+    position: relative; z-index: 2;
+  }
+  .kl-icon { width: 22px; height: 22px; background: rgba(232,201,154,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .kl-icon svg { width: 11px; height: 11px; }
+  .kl-label { font-size: 7px; font-weight: 700; letter-spacing: 1.5px; color: #C1976A; text-transform: uppercase; margin-bottom: 2px; }
+  .kl-text { font-size: 8.5px; font-weight: 400; color: #F5E8D4; line-height: 1.5; }
+
+  .footer {
+    padding: 8px 32px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: relative; z-index: 2;
+  }
+  .footer-divider { height: 1px; background: linear-gradient(90deg,transparent,rgba(139,90,43,0.2),transparent); margin: 6px 32px 0; }
+  .footer-brand { font-family: 'Playfair Display', serif; font-size: 9px; font-weight: 700; color: #3D1F0A; }
+  .footer-brand span { color: #8B5A2B; }
+  .footer-hashtag { font-size: 7.5px; font-weight: 500; color: #A07848; letter-spacing: 0.3px; }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <div class="bg-circle-1"></div>
+  <div class="bg-circle-2"></div>
+  <div class="bg-line"></div>
+
+  <div class="header">
+    <div class="badge">ABTalks · 60 Days Claude Challenge</div>
+    <div class="day-tag">
+      <span class="day-label">Day</span>
+      <span class="day-num">03</span>
+    </div>
+  </div>
+
+  <div class="title-section">
+    <div class="main-heading">Role-Based <span>Prompting</span></div>
+    <div class="subheading">"The same question. Different roles. Different perspectives."</div>
+  </div>
+
+  <div class="center-question-wrap">
+    <div class="brain-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#E8C99A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-1.16"/>
+        <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-1.16"/>
+      </svg>
+    </div>
+    <div>
+      <div class="cq-label">The Core Question</div>
+      <div class="cq-text">How can I build a successful AI career in the next 2 years?</div>
+    </div>
+  </div>
+
+  <div class="flow-row">
+    <div class="flow-line"></div>
+    <div class="flow-arrow"></div>
+    <div style="width:8px;"></div>
+    <div class="flow-arrow"></div>
+    <div style="width:8px;"></div>
+    <div class="flow-arrow"></div>
+    <div class="flow-line"></div>
+  </div>
+
+  <div class="cards-row">
+    <!-- No Role -->
+    <div class="card card-no-role">
+      <div class="card-accent acc-none"></div>
+      <div class="card-icon-wrap ci-none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#8B5A2B" stroke-width="1.8" stroke-linecap="round">
+          <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+      </div>
+      <div class="card-type ct-none">No Role</div>
+      <div class="card-title ctit-none">Generic Response</div>
+      <div class="card-prompt-box cpb-none">
+        <div class="prompt-label">Prompt</div>
+        "How can I build a successful AI career…?"
+      </div>
+      <div class="output-label ol-none">Output Highlights</div>
+      <div class="bullet"><div class="bullet-dot bd-none"></div><span class="bt-none">General career advice</span></div>
+      <div class="bullet"><div class="bullet-dot bd-none"></div><span class="bt-none">Broad recommendations</span></div>
+      <div class="bullet"><div class="bullet-dot bd-none"></div><span class="bt-none">Limited personalization</span></div>
+    </div>
+
+    <!-- Founder -->
+    <div class="card card-founder">
+      <div class="card-accent acc-founder"></div>
+      <div class="card-icon-wrap ci-founder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#E8C99A" stroke-width="1.8" stroke-linecap="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <div class="card-type ct-founder">Founder Persona</div>
+      <div class="card-title ctit-founder">Strategic Perspective</div>
+      <div class="card-prompt-box cpb-founder">
+        <div class="prompt-label">Prompt</div>
+        "You are a startup founder who built AI companies…"
+      </div>
+      <div class="output-label ol-founder">Output Highlights</div>
+      <div class="bullet"><div class="bullet-dot bd-founder"></div><span class="bt-founder">Networking strategies</span></div>
+      <div class="bullet"><div class="bullet-dot bd-founder"></div><span class="bt-founder">Business opportunities</span></div>
+      <div class="bullet"><div class="bullet-dot bd-founder"></div><span class="bt-founder">Personal branding</span></div>
+      <div class="bullet"><div class="bullet-dot bd-founder"></div><span class="bt-founder">Value creation mindset</span></div>
+    </div>
+
+    <!-- Developer -->
+    <div class="card card-developer">
+      <div class="card-accent acc-dev"></div>
+      <div class="card-icon-wrap ci-dev">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#C1976A" stroke-width="1.8" stroke-linecap="round">
+          <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+        </svg>
+      </div>
+      <div class="card-type ct-dev">Developer Persona</div>
+      <div class="card-title ctit-dev">Technical Roadmap</div>
+      <div class="card-prompt-box cpb-dev">
+        <div class="prompt-label">Prompt</div>
+        "You are a senior AI developer and engineer…"
+      </div>
+      <div class="output-label ol-dev">Output Highlights</div>
+      <div class="bullet"><div class="bullet-dot bd-dev"></div><span class="bt-dev">Technical roadmap</span></div>
+      <div class="bullet"><div class="bullet-dot bd-dev"></div><span class="bt-dev">Projects &amp; portfolio</span></div>
+      <div class="bullet"><div class="bullet-dot bd-dev"></div><span class="bt-dev">Programming skills</span></div>
+      <div class="bullet"><div class="bullet-dot bd-dev"></div><span class="bt-dev">Industry tools &amp; practices</span></div>
+    </div>
+  </div>
+
+  <div class="key-learning">
+    <div class="kl-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#E8C99A" stroke-width="1.8" stroke-linecap="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+    <div>
+      <div class="kl-label">Key Learning</div>
+      <div class="kl-text">Assigning a role changes the AI's perspective and produces more <strong style="color:#E8C99A;">targeted, relevant, and useful</strong> responses.</div>
+    </div>
+  </div>
+
+  <div class="footer-divider"></div>
+  <div class="footer">
+    <div class="footer-brand">AB<span>Talks</span> · 60 Days Claude Challenge · Day 03</div>
+    <div class="footer-hashtag">#RoleBasedPrompting &nbsp;#ClaudeAI</div>
+  </div>
+</div>
+</body>
+</html>
